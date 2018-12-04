@@ -1,0 +1,74 @@
+require(psych)
+require(ggplot2)
+require(cAIC4)
+require(r2glmm)
+require(lme4)
+require(lmerTest)
+require(reshape2)
+
+View(home_sample_3)
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object, "y"))
+  sdx <- apply(getME(object, "X"), 2, sd)
+  sc <- fixef(object) * sdx/sdy
+  se.fixef <- coef(summary(object))[, "Std. Error"]
+  se <- se.fixef * sdx/sdy
+  return(data.frame(stdcoef = sc, stds = se))
+}
+
+describe(home_sample_3)
+repeated_variables = c("pain1", "pain2", "pain3", "pain4")
+cor(home_sample_3[, repeated_variables])
+
+home_sample_3_long = melt(home_sample_3, measure.vars = repeated_variables, variable.name = "time", value.name = "pain")
+home_sample_3_long = home_sample_3_long[order(home_sample_3_long[, "ID"]),]
+home_sample_3_long$time = as.numeric(home_sample_3_long$time)
+View(home_sample_3_long)
+
+modrep_int = lmer(pain ~ time + age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (1 | ID), data = home_sample_3_long)
+modrep_slop = lmer(pain ~ time + age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (time | ID), data = home_sample_3_long)
+
+home_sample_3_long_pred = home_sample_3_long
+home_sample_3_long_pred$pred_int = predict(modrep_int)
+home_sample_3_long_pred$pred_slope = predict(modrep_slop)
+
+ggplot(home_sample_3_long_pred, aes(y = pain, x = time, group = ID)) + geom_point(size = 3) + geom_line(color = "red", aes(y = pred_int, x = time)) + facet_wrap(~ID, ncol = 5)
+ggplot(home_sample_3_long_pred, aes(y = pain, x = time, group = ID)) + geom_point(size = 3) + geom_line(color = "red", aes(y = pred_slope, x = time)) + facet_wrap(~ID, ncol = 5)
+
+cAIC(modrep_int)$caic
+cAIC(modrep_slop)$caic
+
+anova(modrep_int, modrep_slop)
+
+modrep_int_quad = lmer(pain ~ time + I(time^2) + age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (1 | ID), data = home_sample_3_long)
+home_sample_3_long_pred$pred_int_quad = predict(modrep_int_quad)
+
+plot_quad_int = ggplot(home_sample_3_long_pred, aes(y = pain, x = time, group = ID)) + geom_point(size = 3) + geom_line(color = "red", aes (y = pred_int_quad, x = time)) + facet_wrap(~ID, ncol = 5)
+plot_quad_int
+
+cAIC(modrep_int)$caic
+cAIC(modrep_int_quad)$caic
+
+anova(modrep_int, modrep_int_quad)
+
+modrep_slop_quad = lmer(pain ~ time + I(time^2) + age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (time | ID), data = home_sample_3_long)
+home_sample_3_long_pred$pred_slope_quad = predict(modrep_slop_quad)
+
+plot_quad_slop = ggplot(home_sample_3_long_pred, aes(y = pain, x = time, group = ID)) + geom_point(size = 3) + geom_line(color = "red", aes(y = pred_slope_quad, x = time)) + facet_wrap(~ID, ncol = 5)
+plot_quad_slop                        
+
+cAIC(modrep_slop)$caic
+cAIC(modrep_slop_quad)$caic
+
+anova(modrep_slop, modrep_slop_quad)
+
+home_sample_3_long_centered_time = home_sample_3_long
+home_sample_3_long_centered_time$time_centered = home_sample_3_long_centered_time$time - mean(home_sample_3_long_centered_time$time)
+modrep_slop_quad = lmer(pain ~ time_centered + I(time_centered^2) + age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (time | ID), data = home_sample_3_long_centered_time)
+
+r2beta(modrep_slop_quad, method = "nsj", data = home_sample_3_long_centered_time)
+cAIC(modrep_slop_quad)$caic
+summary(modrep_slop_quad)
+confint(modrep_slop_quad)
+stdCoef.merMod(modrep_slop_quad)

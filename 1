@@ -1,0 +1,69 @@
+data_sample_1 = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_analysis_class-2018/master/home_sample_1.csv")
+require(psych)
+require(lm.beta)
+require(car)
+require(ggplot2)
+require(rgl)
+require(lattice)
+View(data_sample_1)
+describe(data_sample_1)
+
+mydata_cleaned = data_sample_1
+mydata_cleaned[mydata_cleaned[, "age"] == "222", "age"] = 22
+mydata_cleaned=mydata_cleaned[!mydata_cleaned$mindfulness<=1,]
+table(mydata_cleaned$age)
+
+plot(mod_pain1, arg = "pearson")
+
+shapiro.test(residuals(mod_pain1))
+shapiro.test(residuals(mod_pain2))
+
+residualPlots(mod_pain1)
+residualPlots(mod_pain2)
+
+ncvTest(mod_pain1)
+ncvTest(mod_pain2)
+
+vif(mod_pain1)
+vif(mod_pain2)
+
+View(mydata_cleaned)
+
+hist(mydata_cleaned$age, breaks = 30)
+table(mydata_cleaned$sex)
+plot(mydata_cleaned$pain ~ mydata_cleaned$sex)
+mod_pain1 = lm(pain ~ sex + age, data = mydata_cleaned)
+plot(pain ~ sex, data = mydata_cleaned)
+abline(lm(pain ~ sex, mydata_cleaned))
+plot(pain ~ age, data = mydata_cleaned)
+abline(lm(pain ~ age, data = mydata_cleaned))
+lm(formula = pain ~ age, data = mydata_cleaned)
+lm(formula = pain ~ sex, data = mydata_cleaned)
+
+######### Model 1 - age/sex=pain #########
+mod_pain1 = lm(pain ~ age + sex, data = mydata_cleaned)
+mod_pain1
+summary(mod_pain1)
+AIC(mod_pain1)
+confint((mod_pain1))
+lm.beta(mod_pain1)
+##########################################
+
+####### Model 2 - age/sex/STAI/paincat/cort=pain #######
+mod_pain2 = lm(pain ~ sex + age + STAI_trait + pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data = mydata_cleaned)
+mod_pain2
+summary(mod_pain2)
+AIC(mod_pain2)
+confint((mod_pain2))
+lm.beta(mod_pain2)
+########################################################
+
+anova(mod_pain1, mod_pain2) #bottom right shows if significantly better or not
+
+plot(pain ~ age, data = mydata_cleaned)
+plot(pain ~ sex, data = mydata_cleaned)
+plot(pain ~ STAI_trait, data = mydata_cleaned)
+plot(pain ~ pain_cat, data = mydata_cleaned)
+plot(pain ~ cortisol_serum, data = mydata_cleaned)
+plot(pain ~ cortisol_saliva, data = mydata_cleaned)
+plot(pain ~ mindfulness, data = mydata_cleaned)

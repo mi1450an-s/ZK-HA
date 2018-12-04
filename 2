@@ -1,0 +1,46 @@
+data_sample_1 = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_analysis_class-2018/master/home_sample_1.csv")
+mydata_cleaned = data_sample_1
+mydata_cleaned[mydata_cleaned[, "age"] == "222", "age"] = 22
+mydata_cleaned=mydata_cleaned[!mydata_cleaned$mindfulness<=1,]
+View(home_sample_2)
+home_cleaned = home_sample_2
+home_cleaned = home_cleaned[!home_cleaned$mindfulness<=1,]
+View(home_cleaned)
+describe(home_cleaned)
+table(home_cleaned$sex)
+
+modpain3 = lm(pain ~ age + sex + weight + STAI_trait + pain_cat + mindfulness + cortisol_serum, data = mydata_cleaned)
+summary(modpain3)
+lm.beta(modpain3)
+confint(modpain3)
+
+modpain3_backwards = step(modpain3, direction = "backward")
+summary(modpain3_backwards)
+lm.beta(modpain3_backwards)
+confint(modpain3_backwards)
+
+plot(home_cleaned, arg = "pearson")
+
+shapiro.test(residuals(modpain3))
+shapiro.test(residuals(modpain3_backwards))
+
+residualPlots(modpain3)
+residualPlots(modpain3_backwards)
+
+ncvTest(modpain3)
+ncvTest(modpain3_backwards)
+
+vif(modpain3)
+vif(modpain3_backwards)
+
+anova(modpain3, modpain3_backwards)
+summary(modpain3)$adj.r.squared
+summary(modpain3_backwards)$adj.r.squared
+AIC(modpain3)
+AIC(modpain3_backwards)
+pred_test <- predict(modpain3, home_cleaned)
+pred_test_back <- predict(modpain3_backwards, home_cleaned)
+RSS_test <- sum((home_cleaned[, "pain"] - pred_test)^2)
+RSS_test_back <- sum((home_cleaned[, "pain"] - pred_test_back)^2)
+RSS_test
+RSS_test_back
